@@ -1,32 +1,43 @@
-name: Build and push container image
+name: Build and push base image
 
 on:
   push:
     branches:
-      - master
+      - main
+  schedule:
+    - cron: "17 9 1 * *"   # monthly (1st, 09:17 UTC) to pick up Ubuntu security updates
+  workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout files in repo
+        uses: actions/checkout@v4
 
-    - name: cleanup disk space
-      run: |
-        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
-        df -h
+      - name: Log in to quay.io
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
 
-    - name: Checkout files in repo
-      uses: actions/checkout@master
+      - name: Set date tag
+        id: date
+        run: echo "tag=$(date -u +%Y.%m.%d)" >> "$GITHUB_OUTPUT"
 
-    - name: Build and push the image to quay.io
-      uses: jupyterhub/repo2docker-action@master
-      with:
-        DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
-        DOCKER_REGISTRY: "quay.io"
-        LATEST_TAG_OFF: false
-        REPO_DIR: /srv/repo
-        IMAGE_NAME: "henrykmodzelewski/2i2c-base"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Show how much disk space is left
-      run: df -h
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          pull: true
+          tags: |
+            quay.io/henrykmodzelewski/2i2c-base:latest
+            quay.io/henrykmodzelewski/2i2c-base:${{ steps.date.outputs.tag }}
+
+      - name: Check bzip2 is present
+        run: docker run --rm quay.io/henrykmodzelewski/2i2c-base:${{ steps.date.outputs.tag }} bzip2 --help

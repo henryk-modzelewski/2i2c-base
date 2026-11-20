@@ -1,4 +1,4 @@
-name: Test container image build
+name: Test base image build
 
 on:
   pull_request:
@@ -7,23 +7,20 @@ jobs:
   test-build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout files in repo
+        uses: actions/checkout@v4
 
-    - name: cleanup disk space
-      run: |
-        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
-        df -h
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: checkout files in repo
-      uses: actions/checkout@master
+      - name: Build (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          pull: true
+          tags: 2i2c-base:test
 
-    - name: Build the image and push it if `NO_PUSH` disabled
-      uses: jupyterhub/repo2docker-action@master
-      with:
-        NO_PUSH: "true"
-        DOCKER_REGISTRY: "quay.io"
-        REPO_DIR: /srv/repo
-
-        IMAGE_NAME: "henrykmodzelewski/2i2c-base"
-
-    - name: Show how much disk space is left
-      run: df -h
+      - name: Check bzip2 is present
+        run: docker run --rm 2i2c-base:test bzip2 --help
