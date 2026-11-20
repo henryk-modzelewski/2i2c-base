@@ -1,0 +1,32 @@
+name: Build and push container image
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: cleanup disk space
+      run: |
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+        df -h
+
+    - name: Checkout files in repo
+      uses: actions/checkout@master
+
+    - name: Build and push the image to quay.io
+      uses: jupyterhub/repo2docker-action@master
+      with:
+        DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+        DOCKER_REGISTRY: "quay.io"
+        LATEST_TAG_OFF: false
+        REPO_DIR: /srv/repo
+        IMAGE_NAME: "henrykmodzelewski/2i2c-base"
+
+    - name: Show how much disk space is left
+      run: df -h
