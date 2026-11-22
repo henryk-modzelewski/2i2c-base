@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "17 9 1 * *"   # monthly (1st, 09:17 UTC) to pick up Ubuntu security updates
+    - cron: "17 9 * * 6"   # monthly (Saturday, 09:17 UTC) to pick up Ubuntu security updates
   workflow_dispatch:
 
 jobs:
